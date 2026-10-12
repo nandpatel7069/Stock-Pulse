@@ -6,9 +6,27 @@ declare global {
   var mysqlPool: Pool | undefined;
 }
 
-const pool: Pool =
-  globalThis.mysqlPool ||
-  mysql.createPool({
+function getPoolConfig() {
+  if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('mysql:')) {
+    try {
+      const parsed = new URL(process.env.DATABASE_URL);
+      return {
+        host: parsed.hostname || process.env.DB_HOST || 'localhost',
+        port: Number(parsed.port) || Number(process.env.DB_PORT) || 3306,
+        user: decodeURIComponent(parsed.username) || process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || decodeURIComponent(parsed.password) || '',
+        database: (parsed.pathname ? parsed.pathname.replace(/^\//, '') : '') || process.env.DB_NAME || 'retail_db',
+        waitForConnections: true,
+        connectionLimit: 20,
+        decimalNumbers: true,
+        multipleStatements: true,
+      };
+    } catch {
+      // fallback to env vars below
+    }
+  }
+
+  return {
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER || 'root',
@@ -18,7 +36,12 @@ const pool: Pool =
     connectionLimit: 20,
     decimalNumbers: true,
     multipleStatements: true,
-  });
+  };
+}
+
+const pool: Pool =
+  globalThis.mysqlPool ||
+  mysql.createPool(getPoolConfig());
 
 if (process.env.NODE_ENV !== 'production') {
   globalThis.mysqlPool = pool;

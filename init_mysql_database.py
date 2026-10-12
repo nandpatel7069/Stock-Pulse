@@ -4,6 +4,21 @@ import json
 import random
 from datetime import datetime, timedelta
 
+def load_env():
+    env_file = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(env_file):
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    k, v = line.split('=', 1)
+                    k = k.strip()
+                    v = v.strip().strip("'\"")
+                    if k not in os.environ:
+                        os.environ[k] = v
+
+load_env()
+
 def get_connection(db=None):
     return pymysql.connect(
         host=os.getenv('DB_HOST', 'localhost'),
